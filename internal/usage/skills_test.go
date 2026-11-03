@@ -196,6 +196,11 @@ func TestSkillCountsReportsUnreadableSessions(t *testing.T) {
 	if len(report.Counts) == 0 {
 		t.Error("readable sessions were not counted")
 	}
+	// buildHome holds 5 readable sessions; the corrupt rollout and the broken database
+	// are reported, not counted as read.
+	if report.Sessions != 5 {
+		t.Errorf("sessions = %d, want only the 5 readable ones", report.Sessions)
+	}
 }
 
 func TestSkillCountsStopsOnCancel(t *testing.T) {

@@ -26,11 +26,11 @@
 
 # Installation
 
-Download the prebuilt binary for your platform from the [latest release](https://github.com/alexgorbatchev/agent-stats-cli/releases/latest), replacing `X.X.X` with the version shown on that page.
+Download the prebuilt binary for your platform from the [latest release](https://github.com/alexgorbatchev/agent-stats-cli/releases/latest).
 
 ```bash
 # macOS (Apple Silicon)
-curl -sSL https://github.com/alexgorbatchev/agent-stats-cli/releases/latest/download/agent-stats-cli_X.X.X_darwin_arm64.tar.gz | tar -xz -C ~/.local/bin
+curl -fsSL https://github.com/alexgorbatchev/agent-stats-cli/releases/latest/download/agent-stats_darwin_arm64.tar.gz | tar -xz -C ~/.local/bin
 ```
 
 # Quick Start

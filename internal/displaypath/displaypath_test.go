@@ -24,10 +24,18 @@ func TestFold(t *testing.T) {
 func TestFoldText(t *testing.T) {
 	home := filepath.Join(t.TempDir(), "dev")
 	t.Setenv("HOME", home)
-	text := "opening " + filepath.Join(home, "a.jsonl") + " and " + home + "eloper/b and /opt/c"
-	want := "opening " + filepath.Join("~", "a.jsonl") + " and " + home + "eloper/b and /opt/c"
+	text := "opening " + filepath.Join(home, "a.jsonl") + " and " + home + "eloper/b and /opt/c and /srv/backup" + home + "/x, path=" + home + "/y"
+	want := "opening " + filepath.Join("~", "a.jsonl") + " and " + home + "eloper/b and /opt/c and /srv/backup" + home + "/x, path=~/y"
 	if got := FoldText(text); got != want {
 		t.Errorf("FoldText = %q, want %q", got, want)
+	}
+}
+
+func TestFoldTextAtStart(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "dev")
+	t.Setenv("HOME", home)
+	if got := FoldText(home + "/a"); got != "~/a" {
+		t.Errorf("FoldText at the start = %q", got)
 	}
 }
 

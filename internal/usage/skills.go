@@ -48,7 +48,8 @@ func (c Count) Total() int { return c.Model + c.User }
 type Report struct {
 	// Counts has one entry per skill and harness.
 	Counts []Count
-	// Sessions is the number of sessions read.
+	// Sessions is the number of sessions read completely. Sessions listed in Problems
+	// are not included, even when part of them was counted.
 	Sessions int
 	// Problems lists sessions or locations that could not be read. Counting continues
 	// past them.
@@ -120,9 +121,10 @@ func SkillCounts(ctx context.Context, opts Options) (Report, error) {
 
 	totals := map[countKey]*Count{}
 	for res := range results {
-		report.Sessions++
 		if res.err != nil {
 			report.Problems = append(report.Problems, Problem{Path: res.path, Err: res.err})
+		} else {
+			report.Sessions++
 		}
 		for key, count := range res.counts {
 			total := totals[key]
