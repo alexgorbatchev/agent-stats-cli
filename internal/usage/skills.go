@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -205,8 +206,15 @@ func addSkills(counts map[countKey]*Count, harness parser.Harness, events []pars
 	}
 }
 
+// errUnknownForkTime reports a fork whose creation time discovery could not determine.
+// Its transcript cannot be separated from the parent history it replays, so it is skipped.
+var errUnknownForkTime = errors.New("fork creation time is unknown, so its replayed parent history cannot be told apart")
+
 func countSource(ctx context.Context, source parser.SessionSource, since int64, opencode *opencodeDBs) (map[countKey]*Count, error) {
 	counts := map[countKey]*Count{}
+	if source.Fork && source.ForkedAt.IsZero() {
+		return counts, errUnknownForkTime
+	}
 	if source.Harness == parser.HarnessOpencode {
 		db, err := opencode.open(source.Path)
 		if err != nil {

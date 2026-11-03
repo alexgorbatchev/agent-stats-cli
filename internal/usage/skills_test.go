@@ -223,6 +223,35 @@ func TestSkillCountsReportsUnreadableSessions(t *testing.T) {
 	}
 }
 
+func TestSkillCountsSkipsForksWithoutForkTime(t *testing.T) {
+	isolateEnv(t)
+	home := t.TempDir()
+	project := filepath.Join(home, ".claude/projects/-repo")
+	write(t, filepath.Join(project, "s1.jsonl"), `{"type":"user","timestamp":"2025-11-03T10:00:00Z","message":{"role":"user","content":"go"}}`)
+	fork := filepath.Join(project, "s1/subagents/agent-fork.jsonl")
+	// The spawning call is missing from the parent, so discovery cannot date the fork.
+	write(t, strings.TrimSuffix(fork, ".jsonl")+".meta.json", `{"isFork":true,"toolUseId":"toolu_missing"}`)
+	write(t, fork, `{"type":"assistant","sessionId":"s1","timestamp":"2025-11-03T10:00:00Z","message":{"id":"r1","role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"docs-writer"}}]}}`)
+
+	report, err := SkillCounts(context.Background(), Options{Home: home})
+	if err != nil {
+		t.Fatalf("SkillCounts: %v", err)
+	}
+	if len(report.Counts) != 0 {
+		t.Errorf("counts = %+v, want the undated fork skipped", report.Counts)
+	}
+	if report.Sessions != 1 {
+		t.Errorf("sessions = %d, want only the parent counted as read", report.Sessions)
+	}
+	var forkProblem bool
+	for _, problem := range report.Problems {
+		forkProblem = forkProblem || (problem.Path == fork && errors.Is(problem.Err, errUnknownForkTime))
+	}
+	if !forkProblem {
+		t.Errorf("problems = %+v, want the undated fork reported", report.Problems)
+	}
+}
+
 func TestSkillCountsStopsOnCancel(t *testing.T) {
 	isolateEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
