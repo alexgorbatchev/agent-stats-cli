@@ -12,25 +12,23 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
-          go-version-file: 'go.mod'
+          go-version-file: go.mod
 
-      - name: Check module hygiene
-        run: go mod tidy -diff
+      - uses: extractions/setup-just@v4
 
-      - name: Build
-        run: go build ./...
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.2
+          install-only: true
 
-      - name: Vet
-        run: go vet ./...
-
-      - name: Test
-        run: go test ./...
+      - name: Check
+        run: just check
 
   release:
     needs: verify
