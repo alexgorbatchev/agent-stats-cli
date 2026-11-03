@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
-	github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103220529-1a619eb9d6b1
+	github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103225215-821dcfdc3b2f
 	github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0
 	github.com/klauspost/compress v1.20.3
 	github.com/spf13/cobra v1.10.2

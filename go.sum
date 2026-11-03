@@ -1,7 +1,7 @@
 charm.land/lipgloss/v2 v2.0.6 h1:EaGKeuA8FvF+v2BT5VmZd2LoYLaMZJXA5n34th8nCIQ=
 charm.land/lipgloss/v2 v2.0.6/go.mod h1:ipDDJNSGa1hlwDtSfW1s2/xR8Vdhbut4PXh2zEKZd0Q=
-github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103220529-1a619eb9d6b1 h1:tI4q9gRtRKPBlBMdSQhimBV6AjcQLhfxmLhadRZWTH0=
-github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103220529-1a619eb9d6b1/go.mod h1:QH1Y/KN0flNQ6keLonkAcjlq6EvYJxrkUYFIW6f8hvk=
+github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103225215-821dcfdc3b2f h1:Yxs88CHlXeghXI8bj+SXky5YNpTmueKNX9f4f5IGbvg=
+github.com/alexgorbatchev/agent-parser v1.0.2-0.20261103225215-821dcfdc3b2f/go.mod h1:QH1Y/KN0flNQ6keLonkAcjlq6EvYJxrkUYFIW6f8hvk=
 github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0 h1:lsgP09cFsQq25htGjEYvh8ATiBE7t7R7ECfJBe01QVU=
 github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0/go.mod h1:iW2OKycMBhufRu+sBuCIqV8uwzqLfLzz24zyP65j/cY=
 github.com/aymanbagabas/go-udiff v0.4.1 h1:OEIrQ8maEeDBXQDoGCbbTTXYJMYRCRO1fnodZ12Gv5o=

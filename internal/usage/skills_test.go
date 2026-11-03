@@ -115,6 +115,23 @@ func buildHome(t *testing.T) string {
 		`{"type":"message","timestamp":"2025-11-03T11:00:01Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"c2","name":"read","arguments":{"path":"/x/skills/bun/SKILL.md"}}]}}`,
 	)
 	writeOpencode(t, filepath.Join(home, ".local/share/opencode/opencode.db"))
+
+	// A Claude Code fork the session spawned at 10:05: it replays the session's Skill call
+	// and the spawning call itself, then loads a skill of its own.
+	spawn := `{"type":"assistant","sessionId":"s1","timestamp":"2025-11-03T10:05:00Z","message":{"id":"m9","role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","id":"toolu_spawn","name":"Agent","input":{}}]}}`
+	session := filepath.Join(home, ".claude/projects/-repo/s1.jsonl")
+	data, err := os.ReadFile(session)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, session, strings.TrimRight(string(data), "\n"), spawn)
+	subagents := filepath.Join(home, ".claude/projects/-repo/s1/subagents")
+	write(t, filepath.Join(subagents, "agent-fork.meta.json"), `{"agentType":"fork","isFork":true,"toolUseId":"toolu_spawn"}`)
+	write(t, filepath.Join(subagents, "agent-fork.jsonl"),
+		`{"type":"assistant","sessionId":"s1","agentId":"fork","timestamp":"2025-11-03T10:00:00Z","message":{"id":"r1","role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"docs-writer"}}]}}`,
+		`{"type":"assistant","sessionId":"s1","agentId":"fork","timestamp":"2025-11-03T10:05:00Z","message":{"id":"r2","role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","id":"toolu_spawn","name":"Skill","input":{"skill":"docs-writer"}}]}}`,
+		`{"type":"assistant","sessionId":"s1","agentId":"fork","timestamp":"2025-11-03T10:05:01Z","message":{"id":"f1","role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","id":"f1","name":"Skill","input":{"skill":"golang"}}]}}`,
+	)
 	return home
 }
 
@@ -124,19 +141,22 @@ func TestSkillCountsAcrossHarnesses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SkillCounts: %v", err)
 	}
+	// The fork's replayed docs-writer calls (before and at the spawn) are not counted again;
+	// its own golang load after the spawn is.
 	want := []Count{
 		{Skill: "bun", Harness: parser.HarnessCodex, Model: 1, User: 1},
 		{Skill: "docs-writer", Harness: parser.HarnessClaudeCode, Model: 1, User: 1},
 		{Skill: "bun", Harness: parser.HarnessPi, Model: 1},
 		{Skill: "docs-writer", Harness: parser.HarnessCodex, Model: 1},
 		{Skill: "git-release", Harness: parser.HarnessOpencode, Model: 1},
+		{Skill: "golang", Harness: parser.HarnessClaudeCode, Model: 1},
 		{Skill: "golang", Harness: parser.HarnessPi, Model: 1},
 	}
 	if !reflect.DeepEqual(report.Counts, want) {
 		t.Errorf("counts = %+v\nwant     %+v", report.Counts, want)
 	}
-	if report.Sessions != 5 {
-		t.Errorf("sessions = %d, want 5", report.Sessions)
+	if report.Sessions != 6 {
+		t.Errorf("sessions = %d, want 6", report.Sessions)
 	}
 	if len(report.Problems) != 0 {
 		t.Errorf("problems = %+v", report.Problems)
@@ -146,8 +166,8 @@ func TestSkillCountsAcrossHarnesses(t *testing.T) {
 	wantCombined := []Count{
 		{Skill: "bun", Model: 2, User: 1},
 		{Skill: "docs-writer", Model: 2, User: 1},
+		{Skill: "golang", Model: 2},
 		{Skill: "git-release", Model: 1},
-		{Skill: "golang", Model: 1},
 	}
 	if !reflect.DeepEqual(combined, wantCombined) {
 		t.Errorf("combined = %+v\nwant       %+v", combined, wantCombined)
@@ -196,10 +216,10 @@ func TestSkillCountsReportsUnreadableSessions(t *testing.T) {
 	if len(report.Counts) == 0 {
 		t.Error("readable sessions were not counted")
 	}
-	// buildHome holds 5 readable sessions; the corrupt rollout and the broken database
+	// buildHome holds 6 readable sessions; the corrupt rollout and the broken database
 	// are reported, not counted as read.
-	if report.Sessions != 5 {
-		t.Errorf("sessions = %d, want only the 5 readable ones", report.Sessions)
+	if report.Sessions != 6 {
+		t.Errorf("sessions = %d, want only the 6 readable ones", report.Sessions)
 	}
 }
 
@@ -218,23 +238,6 @@ func TestCountTranscriptReportsReadFailure(t *testing.T) {
 	err := countTranscript(reader, parser.SessionSource{Harness: parser.HarnessPi}, 0, counts)
 	if err == nil {
 		t.Fatal("expected the read failure to be returned")
-	}
-}
-
-func TestPiHeaderTime(t *testing.T) {
-	tests := []struct {
-		line string
-		ok   bool
-	}{
-		{`{"type":"session","timestamp":"2025-11-03T11:00:00Z"}`, true},
-		{`{"type":"message","timestamp":"2025-11-03T11:00:00Z"}`, false},
-		{`{"type":"session","timestamp":"yesterday"}`, false},
-		{`not json`, false},
-	}
-	for _, tt := range tests {
-		if _, ok := piHeaderTime([]byte(tt.line)); ok != tt.ok {
-			t.Errorf("piHeaderTime(%s) ok = %v, want %v", tt.line, ok, tt.ok)
-		}
 	}
 }
 

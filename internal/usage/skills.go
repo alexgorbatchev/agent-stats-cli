@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"cmp"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"runtime"
@@ -64,8 +63,8 @@ type Problem struct {
 }
 
 // SkillCounts reads every discovered session for the selected harnesses and counts the
-// skills invoked in them. Pi forks count only what happened after the fork, because a
-// fork transcript replays its parent's history first.
+// skills invoked in them. A fork counts only what happened after it was created, because a
+// fork transcript can replay its parent's history first.
 func SkillCounts(ctx context.Context, opts Options) (Report, error) {
 	sources, err := parser.DiscoverSessions(ctx, parser.DiscoverOptions{Harnesses: opts.Harnesses, Home: opts.Home})
 	if ctxErr := ctx.Err(); ctxErr != nil {
@@ -183,9 +182,11 @@ type countKey struct {
 	harness parser.Harness
 }
 
-func addSkills(counts map[countKey]*Count, harness parser.Harness, events []parser.ParsedEvent, since int64) {
+// addSkills counts the skills in events recorded at or after since and strictly after
+// forkedAt; forkedAt is zero outside forks.
+func addSkills(counts map[countKey]*Count, harness parser.Harness, events []parser.ParsedEvent, since, forkedAt int64) {
 	for _, event := range events {
-		if since > 0 && event.Timestamp < since {
+		if (since > 0 && event.Timestamp < since) || (forkedAt > 0 && event.Timestamp <= forkedAt) {
 			continue
 		}
 		for _, skill := range event.Data.Skills {
@@ -215,7 +216,7 @@ func countSource(ctx context.Context, source parser.SessionSource, since int64, 
 		if err != nil {
 			return counts, fmt.Errorf("reading OpenCode session %s: %w", source.SessionID, err)
 		}
-		addSkills(counts, source.Harness, events, since)
+		addSkills(counts, source.Harness, events, since, 0)
 		return counts, nil
 	}
 
@@ -229,26 +230,21 @@ func countSource(ctx context.Context, source parser.SessionSource, since int64, 
 
 // countTranscript parses a JSONL transcript line by line. Lines a parser rejects are
 // skipped; a read failure stops the transcript and is returned with what was counted.
+// A fork's events at or before its fork time are replayed parent history and are skipped.
 func countTranscript(reader io.Reader, source parser.SessionSource, since int64, counts map[countKey]*Count) error {
 	parse := lineParser(source.Harness)
+	forkedAt := int64(0)
+	if source.Fork && !source.ForkedAt.IsZero() {
+		forkedAt = source.ForkedAt.UnixMilli()
+	}
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 0, 1<<20), maxLineBytes)
-	first := true
 	for scanner.Scan() {
-		line := scanner.Bytes()
-		if first && source.Fork {
-			// A Pi fork replays its parent's history before its own entries; count only
-			// what happened after the fork was created.
-			if forkedAt, ok := piHeaderTime(line); ok && forkedAt > since {
-				since = forkedAt
-			}
-		}
-		first = false
-		events, err := parse(line)
+		events, err := parse(scanner.Bytes())
 		if err != nil {
 			continue
 		}
-		addSkills(counts, source.Harness, events, since)
+		addSkills(counts, source.Harness, events, since, forkedAt)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("reading transcript: %w", err)
@@ -265,22 +261,6 @@ func lineParser(harness parser.Harness) func([]byte) ([]parser.ParsedEvent, erro
 	default:
 		return func(line []byte) ([]parser.ParsedEvent, error) { return parser.ParsePiLine(line, "") }
 	}
-}
-
-// piHeaderTime returns the creation time of a Pi transcript from its session header.
-func piHeaderTime(line []byte) (int64, bool) {
-	var header struct {
-		Type      string `json:"type"`
-		Timestamp string `json:"timestamp"`
-	}
-	if err := json.Unmarshal(line, &header); err != nil || header.Type != "session" {
-		return 0, false
-	}
-	at, err := time.Parse(time.RFC3339Nano, header.Timestamp)
-	if err != nil {
-		return 0, false
-	}
-	return at.UnixMilli(), true
 }
 
 // opencodeDBs shares one read-only handle per OpenCode database across workers.

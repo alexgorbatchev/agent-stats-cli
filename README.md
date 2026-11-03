@@ -19,7 +19,7 @@
 - Sessions are read from the harnesses' own locations: `~/.claude/projects`, `~/.codex/sessions` and `~/.codex/archived_sessions`, `~/.pi/agent/sessions`, and `~/.local/share/opencode`. The harnesses' environment variables, such as `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_SESSIONS_DIR`, `OPENCODE_DB`, and `XDG_DATA_HOME`, move these locations the same way they move them for the harness.
 - Nothing is written. Transcripts are only read, and OpenCode databases are opened read-only, so running `agent-stats` next to active agents is safe.
 - A skill counts as **model** when the agent loaded it itself and **user** when you invoked it: a Claude Code `Skill` call or slash command, a Codex `$name` mention or a read of the skill's `SKILL.md`, a Pi `read` of `SKILL.md` or `/skill:name`, or an OpenCode `skill` call. Commands you ran yourself with Codex's `!` are not counted.
-- Each load is counted once. Reading the rest of a long `SKILL.md` in later chunks does not add invocations, and a Pi fork counts only what happened after it was forked.
+- Each load is counted once. Reading the rest of a long `SKILL.md` in later chunks does not add invocations, and a Claude Code or Pi fork, which starts by replaying its parent's history, counts only what happened after it was forked.
 - Every run reads all matching history from scratch; nothing is cached. Thousands of sessions take seconds to tens of seconds, spread across all CPU cores.
 - A session that cannot be read, such as a damaged archive, is skipped with a warning on stderr while the rest are still counted, and the exit status stays 0. Invalid flags exit 1.
 - Results go to stdout and warnings and errors to stderr, with the home directory shown as `~`. Setting `AGENT=1` switches to compact, tab-separated output meant for agents and scripts.
@@ -51,11 +51,11 @@ Sample Output:
 ┌───────────────────────┬───────┬──────┬───────┐
 │ Skill                 │ Model │ User │ Total │
 ├───────────────────────┼───────┼──────┼───────┤
-│ typescript            │ 720   │ 0    │ 720   │
+│ typescript            │ 722   │ 0    │ 722   │
 │ claude-code-codegraph │ 669   │ 0    │ 669   │
 │ docs-writer           │ 667   │ 0    │ 667   │
 └───────────────────────┴───────┴──────┴───────┘
-7641 invocations of 148 skills across 2191 sessions. Model: the agent loaded the skill itself. User: you invoked it.
+7654 invocations of 148 skills across 2200 sessions. Model: the agent loaded the skill itself. User: you invoked it.
 ```
 
 # Options & Flags
