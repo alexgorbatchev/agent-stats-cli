@@ -1,29 +1,36 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
-          go-version-file: 'go.mod'
+          go-version-file: go.mod
 
-      - name: Check module hygiene
-        run: go mod tidy -diff
+      - uses: extractions/setup-just@v4
 
-      - name: Build
-        run: go build ./...
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.2
+          install-only: true
 
-      - name: Vet
-        run: go vet ./...
-
-      - name: Test
-        run: go test -v ./...
+      - name: Check
+        run: just check

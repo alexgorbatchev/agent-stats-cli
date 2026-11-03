@@ -1,42 +1,47 @@
 ---
 created_on: 2026-11-03 10:39
-last_modified: 2026-11-03 10:39
+last_modified: 2026-11-03 14:25
 status: current
 ---
 
 # agent-stats-cli
 
-Single-run CLI that reports usage statistics, such as most-used skills, from local AI coding agent transcripts (Claude Code, Codex, Pi, OpenCode)
+Single-run CLI (`agent-stats`) that reports usage statistics, such as most-used skills, from the session history Claude Code, Codex, Pi, and OpenCode keep locally.
 
 ## Commands
-- **Build Local Binary:** `just build` (compiles to `bin/agent-stats`)
-- **Run CLI with Arguments:** `just run [args...]`
-- **Run CLI in Agent Mode:** `just run-ai [args...]` (`AGENT=1`)
-- **Run Tests:** `just test` (`go test -v ./...`)
-- **Run Static Analysis & Tests:** `just check` (`go vet ./... && go test -v ./...`)
-- **Run Linter / Static Analysis:** `just vet` or `just lint` (`go vet ./...`)
-- **Format Source Code:** `just fmt` (`go fmt ./...`)
 
-## Setup & Environment
-- **Prerequisites:** Go 1.26.2+, `just`.
-- **Temporary Files:** Temporary file operations use `.tmp/` within the project root.
+- Prepare dependencies: `just setup`
+- Run the CLI: `just run [args...]`; agent mode: `just run-ai [args...]` (`AGENT=1`)
+- Test with the race detector: `just test`
+- Enforce the 90% statement-coverage floor: `just coverage`
+- Lint (gofmt, `go mod tidy -diff`, vet, golangci-lint): `just lint`
+- Run every gate: `just check` (lint, then coverage); CI runs the same recipe
+- Build `bin/agent-stats`: `just build`
+
+## Layout
+
+- `cmd/agent-stats/`: command tree, help setup, output rendering
+- `internal/usage/`: session discovery, transcript parsing, and skill counting
+- `internal/displaypath/`: home-directory folding for every printed path
+- `skills/agent-stats/SKILL.md`: the agent skill the `skill` command points to
 
 ## Conventions
-- **Output Formatting & No Decorative Headers:** All CLI output must be plain text without emojis across all modes.
-- **Help Screens & Terminal Width:** CLI help output (`--help`) must display an aligned hierarchical tree view with `├─` and `╰─` glyphs powered by `github.com/alexgorbatchev/cobra-help-tree/v2` (`cobrahelptree.Setup(rootCmd)`), with command descriptions automatically trimmed to the terminal width using ellipsis (`...`).
-- **Agent Mode (`AGENT=1`):** When `AGENT=1` is set, output compact key-value pairs or bullets.
-- **Hermetic Unit Tests:** All unit tests must remain 100% offline and hermetic.
 
-## Embedded Agent Skill
+- Harness knowledge belongs in `github.com/alexgorbatchev/agent-parser`: session locations come from `parser.DiscoverSessions`, transcripts open through `parser.OpenTranscript`, and skill invocations come from `EventData.Skills`. Add harness formats or detection rules there, not here.
+- Help, the `skill` command, and the agent-help alert come from `cobra-help-tree` v4 (`HelpOptions.Skill`). Human output uses `lipgloss` tables; agent output is tab-separated lines; `--json` prints arrays.
+- Route every printed path, including paths inside error messages, through `displaypath.Fold` or `displaypath.FoldText`.
+- Tests stay offline and hermetic: set `HOME` to a temporary directory and clear the harness location variables before discovering sessions.
 
-- `agent-stats skill` prints `cmd/agent-stats/SKILL.md` verbatim, embedded with `//go:embed`.
-- Every agent-mode help screen starts with an alert to read `AGENT=1 agent-stats skill` first.
-- Keep the skill in sync in the same change whenever public commands, arguments, flags, shorthands, types, defaults, accepted values, environment variables, outputs, errors, or side effects change. Include generated help and completion commands.
-- Verify against the implementation and pinned dependencies, update `last_modified`, and run `just check`. Maintain `TestSkillDocumentsCommandInterface` coverage of the live command tree.
-- Write affirmative usage instructions and factual contracts in the skill. Keep development instructions and negative prohibitions in this file.
-- Do not use the usage skill for developing the Go implementation, invent unsupported operations, read repository files at runtime to print the skill, or maintain a second copy of its text.
+## Agent skill
+
+- Keep `skills/agent-stats/SKILL.md` in sync in the same change whenever a command, argument, flag, shorthand, type, default, accepted value, environment variable, output, error, or side effect changes, including generated help and completion commands. Update `last_modified`.
+- `TestSkillDocumentsCommandInterface` compares the skill with the live command tree and fails on omissions; keep it passing rather than loosening it.
+- Write affirmative usage instructions and factual contracts in the skill. Keep development instructions and prohibitions in this file. Never embed the skill in the binary or keep a second copy.
 
 ## Boundaries
-- **Always:** Maintain >= 90% statement code coverage across Go packages.
-- **Always:** Run `just test` and `just vet` before committing changes.
-- **Never:** Commit compiled Go binaries (e.g. `bin/agent-stats`) to git.
+
+- Always: keep at least 90% statement coverage; `just coverage` enforces it.
+- Always: run `just check` before committing.
+- Always: change results-affecting code together with tests that observe the change.
+- Never: write to, lock, or modify harness storage; open OpenCode databases read-only.
+- Never: commit compiled binaries (`bin/`).

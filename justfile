@@ -1,5 +1,8 @@
 set dotenv-load := false
 
+# Minimum statement coverage the module must keep, enforced by `just coverage`
+min_coverage := "90"
+
 # Default recipe: list available recipes
 default:
     @just --list
@@ -16,9 +19,22 @@ run *args:
 run-ai *args:
     AGENT=1 go run ./cmd/agent-stats {{args}}
 
-# Run test suite
+# Run the tests with the race detector
 test:
-    go test -v ./...
+    go test -race ./...
+
+# Run the tests and fail when statement coverage drops below the floor
+coverage:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    go test -race -coverprofile=coverage.out ./...
+    total="$(go tool cover -func=coverage.out | awk '/^total:/ { print substr($3, 1, length($3) - 1) }')"
+    if awk "BEGIN { exit ({{ min_coverage }} <= ${total}) ? 0 : 1 }"; then
+        echo "statement coverage ${total}% meets the {{ min_coverage }}% floor"
+    else
+        echo "statement coverage ${total}% is below the {{ min_coverage }}% floor" >&2
+        exit 1
+    fi
 
 # Build binary into bin/
 build:
@@ -29,9 +45,12 @@ build:
 install:
     go install ./cmd/agent-stats
 
-# Run static analysis and vet
+# Check formatting and module hygiene, vet, and run golangci-lint
 lint:
+    @out="$(gofmt -l .)"; if [ -n "$out" ]; then echo "Unformatted Go files:"; echo "$out"; exit 1; fi
+    go mod tidy -diff
     go vet ./...
+    golangci-lint run
 
 # Alias for lint
 vet: lint
@@ -40,10 +59,10 @@ vet: lint
 fmt:
     go fmt ./...
 
-# Run static analysis and test suite in sequence
+# Run every static check and the coverage-gated tests
 check:
-    go vet ./...
-    go test -v ./...
+    just lint
+    just coverage
 
 # Clean up build binaries and temporary files
 clean:
