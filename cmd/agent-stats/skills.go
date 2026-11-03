@@ -48,7 +48,13 @@ func newUsageSkillsCommand() *cobra.Command {
 			if flags.limit < 0 {
 				return fmt.Errorf("--limit must be zero or more, got %d", flags.limit)
 			}
-			report, err := usage.SkillCounts(cmd.Context(), usage.Options{Harnesses: harnesses, Since: since})
+			opts := usage.Options{Harnesses: harnesses, Since: since}
+			indicator := newScanIndicator(cmd.ErrOrStderr(), flags.json)
+			if indicator != nil {
+				opts.Progress = indicator
+			}
+			report, err := usage.SkillCounts(cmd.Context(), opts)
+			indicator.done()
 			if err != nil {
 				return err
 			}

@@ -31,6 +31,18 @@ type Options struct {
 	Home string
 	// Workers bounds how many transcripts are read at once; zero means one per CPU.
 	Workers int
+	// Progress, when set, is told how many sessions were found and when each one has been
+	// read.
+	Progress Progress
+}
+
+// Progress receives scan progress from SkillCounts. Its methods are called from one
+// goroutine.
+type Progress interface {
+	// Discovered reports how many sessions will be read.
+	Discovered(total int)
+	// Read reports that one more session has been read, successfully or not.
+	Read()
 }
 
 // Count is how often one skill was invoked through one harness.
@@ -74,6 +86,9 @@ func SkillCounts(ctx context.Context, opts Options) (Report, error) {
 	var report Report
 	if err != nil {
 		report.Problems = append(report.Problems, Problem{Err: err})
+	}
+	if opts.Progress != nil {
+		opts.Progress.Discovered(len(sources))
 	}
 
 	opencode := newOpencodeDBs()
@@ -121,6 +136,9 @@ func SkillCounts(ctx context.Context, opts Options) (Report, error) {
 
 	totals := map[countKey]*Count{}
 	for res := range results {
+		if opts.Progress != nil {
+			opts.Progress.Read()
+		}
 		if res.err != nil {
 			report.Problems = append(report.Problems, Problem{Path: res.path, Err: res.err})
 		} else {

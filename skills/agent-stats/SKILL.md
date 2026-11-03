@@ -4,7 +4,7 @@ description: "Use when answering questions about how AI coding agents were used 
 author: "Alex Gorbatchev"
 metadata:
   created_on: 2026-11-03 10:39
-  last_modified: 2026-11-03 15:05
+  last_modified: 2026-11-03 15:55
   status: current
 ---
 
@@ -74,7 +74,7 @@ No invocations prints nothing.
 
 With `--json`, stdout is a JSON array of objects with `skill`, `model`, `user`, and `total`, plus `harness` with `--by-harness`. Agent mode prints it on one line; human mode indents it. No invocations prints `[]`.
 
-Human mode prints a table and a summary line with the total invocations, distinct skills, and sessions read.
+Human mode prints a table and a summary line with the total invocations, distinct skills, and sessions read. While scanning, human mode shows a progress bar on stderr when stderr is a terminal and clears it before the results; agent mode and `--json` show none.
 
 ### Errors and warnings
 

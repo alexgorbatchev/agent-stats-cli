@@ -174,6 +174,25 @@ func TestSkillCountsAcrossHarnesses(t *testing.T) {
 	}
 }
 
+type recordingProgress struct {
+	total, read int
+}
+
+func (p *recordingProgress) Discovered(total int) { p.total = total }
+func (p *recordingProgress) Read()                { p.read++ }
+
+func TestSkillCountsReportsProgress(t *testing.T) {
+	isolateEnv(t)
+	progress := &recordingProgress{}
+	report, err := SkillCounts(context.Background(), Options{Home: buildHome(t), Progress: progress})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if progress.total != 6 || progress.read != 6 || report.Sessions != 6 {
+		t.Errorf("progress = %+v, sessions = %d; want every discovered session reported read", progress, report.Sessions)
+	}
+}
+
 func TestSkillCountsFiltersHarnessesAndTime(t *testing.T) {
 	isolateEnv(t)
 	home := buildHome(t)

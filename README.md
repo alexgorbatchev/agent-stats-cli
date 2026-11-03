@@ -20,7 +20,7 @@
 - Nothing is written. Transcripts are only read, and OpenCode databases are opened read-only, so running `agent-stats` next to active agents is safe.
 - A skill counts as **model** when the agent loaded it itself and **user** when you invoked it: a Claude Code `Skill` call or slash command, a Codex `$name` mention or a read of the skill's `SKILL.md`, a Pi `read` of `SKILL.md` or `/skill:name`, or an OpenCode `skill` call. Commands you ran yourself with Codex's `!` are not counted.
 - Each load is counted once. Reading the rest of a long `SKILL.md` in later chunks does not add invocations, and a Claude Code or Pi fork, which starts by replaying its parent's history, counts only what happened after it was forked.
-- Every run reads all matching history from scratch; nothing is cached. Thousands of sessions take seconds to tens of seconds, spread across all CPU cores.
+- Every run reads all matching history from scratch; nothing is cached. Thousands of sessions take seconds to tens of seconds, spread across all CPU cores. On a terminal, a progress bar on stderr shows how many sessions have been read, and it clears itself before the results print.
 - A session that cannot be read, such as a damaged archive, is skipped with a warning on stderr while the rest are still counted, and the exit status stays 0. Invalid flags exit 1.
 - Results go to stdout and warnings and errors to stderr, with the home directory shown as `~`. Setting `AGENT=1` switches to compact, tab-separated output meant for agents and scripts.
 

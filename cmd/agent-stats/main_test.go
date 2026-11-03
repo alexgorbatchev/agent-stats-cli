@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -358,5 +359,60 @@ func TestRunFailsWhenWarningCannotBeWritten(t *testing.T) {
 	cmd.SetArgs([]string{"usage", "skills", "--harness", "codex"})
 	if code := run(context.Background(), cmd); code != 1 {
 		t.Fatalf("exit code = %d, want 1 when a warning cannot be written", code)
+	}
+}
+
+func TestUsageSkillsScanIndicator(t *testing.T) {
+	fixtureHome(t)
+	defer func(orig func(io.Writer) bool) { isTerminal = orig }(isTerminal)
+	isTerminal = func(io.Writer) bool { return true }
+
+	tests := []struct {
+		name      string
+		mode      string
+		args      []string
+		indicator bool
+	}{
+		{"human on a terminal", "0", []string{"usage", "skills"}, true},
+		{"agent mode", "1", []string{"usage", "skills"}, false},
+		{"json", "0", []string{"usage", "skills", "--json"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("AGENT", tt.mode)
+			stdout, stderr, code := execute(t, tt.args...)
+			if code != 0 {
+				t.Fatalf("code = %d, stderr = %q", code, stderr)
+			}
+			if shown := strings.Contains(stderr, "Reading sessions") && strings.Contains(stderr, "/2"); shown != tt.indicator {
+				t.Errorf("indicator shown = %v, want %v; stderr = %q", shown, tt.indicator, stderr)
+			}
+			if strings.Contains(stdout, "Reading sessions") || strings.Contains(stdout, "Finding sessions") {
+				t.Errorf("the indicator leaked into stdout: %q", stdout)
+			}
+		})
+	}
+
+	// Results are unchanged by the indicator.
+	t.Setenv("AGENT", "0")
+	withIndicator, _, _ := execute(t, "usage", "skills")
+	isTerminal = func(io.Writer) bool { return false }
+	withoutIndicator, stderr, _ := execute(t, "usage", "skills")
+	if withIndicator != withoutIndicator || stderr != "" {
+		t.Errorf("stdout differs with the indicator, or stderr is not empty off a terminal: %q", stderr)
+	}
+}
+
+func TestIsTerminalRejectsNonFiles(t *testing.T) {
+	if isTerminal(new(bytes.Buffer)) {
+		t.Error("a buffer is not a terminal")
+	}
+	f, err := os.CreateTemp(t.TempDir(), "out")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	if isTerminal(f) {
+		t.Error("a regular file is not a terminal")
 	}
 }
