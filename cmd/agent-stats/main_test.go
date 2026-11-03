@@ -390,6 +390,9 @@ func TestUsageSkillsScanIndicator(t *testing.T) {
 			if strings.Contains(stdout, "Reading sessions") || strings.Contains(stdout, "Finding sessions") {
 				t.Errorf("the indicator leaked into stdout: %q", stdout)
 			}
+			if tt.indicator && (!strings.Contains(stderr, "Finding sessions") || !strings.HasSuffix(stderr, eraseLine)) {
+				t.Errorf("the indicator must show discovery and end by erasing its line; stderr = %q", stderr)
+			}
 		})
 	}
 
@@ -400,6 +403,32 @@ func TestUsageSkillsScanIndicator(t *testing.T) {
 	withoutIndicator, stderr, _ := execute(t, "usage", "skills")
 	if withIndicator != withoutIndicator || stderr != "" {
 		t.Errorf("stdout differs with the indicator, or stderr is not empty off a terminal: %q", stderr)
+	}
+}
+
+// eraseLine is the sequence the indicator ends with to clear itself.
+const eraseLine = "\033[2K\r"
+
+func TestScanIndicatorClearsBeforeAnInterruptedScanFails(t *testing.T) {
+	t.Setenv("AGENT", "0")
+	fixtureHome(t)
+	defer func(orig func(io.Writer) bool) { isTerminal = orig }(isTerminal)
+	isTerminal = func(io.Writer) bool { return true }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	stderr := new(bytes.Buffer)
+	cmd := newRootCommand()
+	cmd.SetOut(new(bytes.Buffer))
+	cmd.SetErr(stderr)
+	cmd.SetArgs([]string{"usage", "skills"})
+	if code := run(ctx, cmd); code != 1 {
+		t.Fatalf("code = %d", code)
+	}
+	out := stderr.String()
+	erased, failed := strings.LastIndex(out, eraseLine), strings.Index(out, "[ERROR] ")
+	if !strings.Contains(out, "Finding sessions") || erased < 0 || failed < erased {
+		t.Fatalf("the indicator must be erased before the error is printed; stderr = %q", out)
 	}
 }
 

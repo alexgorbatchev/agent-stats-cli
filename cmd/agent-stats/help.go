@@ -43,7 +43,7 @@ func setupHelp(cmd *cobra.Command) {
 		},
 	})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), err)
 		os.Exit(1)
 	}
 }

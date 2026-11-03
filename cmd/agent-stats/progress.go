@@ -24,9 +24,10 @@ type scanIndicator struct {
 }
 
 // newScanIndicator returns an indicator writing to w, or nil when none should be shown:
-// in agent mode, for JSON output, or when w is not a terminal.
+// in agent mode, for JSON output, when w is not a terminal, or when the terminal cannot
+// erase a line, which the indicator needs to clear itself.
 func newScanIndicator(w io.Writer, jsonOutput bool) *scanIndicator {
-	if cobrahelptree.IsAgentMode() || jsonOutput || !isTerminal(w) {
+	if cobrahelptree.IsAgentMode() || jsonOutput || !isTerminal(w) || !enableANSI(w) {
 		return nil
 	}
 	bar := progressbar.NewOptions(-1,
@@ -34,12 +35,14 @@ func newScanIndicator(w io.Writer, jsonOutput bool) *scanIndicator {
 		progressbar.OptionSetDescription("Finding sessions"),
 		progressbar.OptionSpinnerType(14),
 		progressbar.OptionShowCount(),
-		progressbar.OptionShowTotalBytes(true), // shows the count as read/total
 
 		progressbar.OptionSetElapsedTime(false),
 		progressbar.OptionSetPredictTime(false),
 		progressbar.OptionThrottle(100*time.Millisecond),
 		progressbar.OptionClearOnFinish(),
+		// Erase with an escape sequence: without it the library only returns the cursor
+		// on Windows, leaving the bar on screen under the results.
+		progressbar.OptionUseANSICodes(true),
 	)
 	_ = bar.RenderBlank()
 	return &scanIndicator{bar: bar}
