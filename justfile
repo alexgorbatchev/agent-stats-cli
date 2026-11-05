@@ -64,6 +64,6 @@ check:
     just lint
     just coverage
 
-# Clean up build binaries and temporary files
+# Clean build and coverage outputs
 clean:
-    rm -rf bin coverage.out .tmp dist
+    rm -rf bin coverage.out dist
