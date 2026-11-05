@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-03 10:39
-last_modified: 2026-11-03 14:25
+last_modified: 2026-11-05 06:43
 status: current
 ---
 
@@ -31,6 +31,7 @@ Single-run CLI (`agent-stats`) that reports usage statistics, such as most-used 
 - Help, the `skill` command, and the agent-help alert come from `cobra-help-tree` v4 (`HelpOptions.Skill`). Human output uses `lipgloss` tables; agent output is tab-separated lines; `--json` prints arrays.
 - Route every printed path, including paths inside error messages, through `displaypath.Fold` or `displaypath.FoldText`.
 - Tests stay offline and hermetic: set `HOME` to a temporary directory and clear the harness location variables before discovering sessions.
+- Keep coverage profiles and toolchain scratch inside each invocation's unique `.tmp/coverage.*` directory. `scripts/check-coverage.sh` stops its consumer process groups before removing that directory, including on failure or cancellation; preserve the directory if shutdown cannot be verified. Never remove another invocation's scratch.
 
 ## Agent skill
 
