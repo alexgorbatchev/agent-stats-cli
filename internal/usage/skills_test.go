@@ -101,7 +101,7 @@ func buildHome(t *testing.T) string {
 		`not json`,
 	)
 	writeZstd(t, filepath.Join(home, ".codex/sessions/2025/11/03/rollout-2025-11-03T10-00-00-01a1aaaa-0000-7000-8000-000000000001.jsonl.zst"),
-		`{"timestamp":"2025-11-03T10:00:00Z","type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/bin/zsh","-lc","cat /x/skills/docs-writer/SKILL.md /x/skills/bun/SKILL.md"],"exit_code":0}}}`,
+		`{"timestamp":"2025-11-03T10:00:00Z","type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/bin/zsh","-lc","cat /x/skills/{docs-writer,bun,docs-writer}/SKILL.md"],"exit_code":0}}}`,
 		`{"timestamp":"2026-11-03T10:00:00Z","type":"event_msg","payload":{"type":"item_completed","item":{"type":"UserMessage","content":[{"type":"skill","name":"bun","path":"/x/skills/bun/SKILL.md"}]}}}`,
 	)
 	write(t, filepath.Join(home, ".pi/agent/sessions/--repo--/2025-11-03T10-00-00-000Z_parent.jsonl"),

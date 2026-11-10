@@ -4,7 +4,7 @@ description: "Use when answering questions about how AI coding agents were used 
 author: "Alex Gorbatchev"
 metadata:
   created_on: 2026-11-03 10:39
-  last_modified: 2026-11-03 15:55
+  last_modified: 2026-11-10 15:03
   status: current
 ---
 
@@ -50,6 +50,8 @@ An invocation is counted as `model` when the agent loaded the skill itself and `
 - Codex: a successful shell command that reads a skill's `SKILL.md` from its first line (model); a `$name` mention (user). Commands the user ran with `!` are not counted.
 - Pi: a `read` of a skill's `SKILL.md` from its first line (model); a `/skill:name` command (user).
 - OpenCode: a `skill` tool call (model).
+
+Shell reads expand unquoted brace groups such as `skills/{programming,golang}/SKILL.md` into individual skills, counting each skill once per command. Quoted braces remain literal.
 
 A Claude Code fork subagent or a Pi fork starts by replaying its parent's history; it counts only what happened after it was created, so the parent's invocations are not counted twice. A fork whose creation time cannot be determined is skipped and reported as unreadable data.
 

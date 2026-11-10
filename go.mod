@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
-	github.com/alexgorbatchev/agent-parser v1.1.0
+	github.com/alexgorbatchev/agent-parser v1.2.1
 	github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0
 	github.com/klauspost/compress v1.20.3
 	github.com/schollz/progressbar/v3 v3.19.1
@@ -40,4 +40,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.61.0 // indirect
+	mvdan.cc/sh/v3 v3.14.1 // indirect
 )
