@@ -1,12 +1,12 @@
 ---
 created_on: 2026-11-03 10:39
-last_modified: 2026-11-05 06:43
+last_modified: 2026-11-22 08:36
 status: current
 ---
 
 # agent-stats-cli
 
-Single-run CLI (`agent-stats`) that reports usage statistics, such as most-used skills, from the session history Claude Code, Codex, Pi, and OpenCode keep locally.
+Single-run CLI (`agent-stats`) that reports usage statistics, such as most-used skills, from the session history Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`) keep locally.
 
 ## Commands
 

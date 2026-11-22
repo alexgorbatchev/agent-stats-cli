@@ -25,6 +25,8 @@ var techCatalog = cobrahelptree.TechCatalog{
 			{Name: "OPENCODE_DB_PATH", Description: "OpenCode database file, overriding every other OpenCode location"},
 			{Name: "OPENCODE_DB", Description: "OpenCode's own database setting: absolute, or relative to the OpenCode data directory"},
 			{Name: "XDG_DATA_HOME", Description: "Data directory holding opencode/, defaulting to ~/.local/share"},
+			{Name: "AGY_SESSIONS_DIR", Description: "Antigravity brain directory holding conversation transcripts"},
+			{Name: "GEMINI_HOME", Description: "Gemini home directory; antigravity-cli/brain lives under it when AGY_SESSIONS_DIR is unset"},
 		},
 	},
 }

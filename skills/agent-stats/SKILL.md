@@ -4,7 +4,7 @@ description: "Use when answering questions about how AI coding agents were used 
 author: "Alex Gorbatchev"
 metadata:
   created_on: 2026-11-03 10:39
-  last_modified: 2026-11-10 15:03
+  last_modified: 2026-11-22 08:36
   status: current
 ---
 
@@ -35,6 +35,8 @@ These select where sessions are read from. They are the harnesses' own settings,
 | `OPENCODE_DB_PATH` | OpenCode database file, overriding every other OpenCode location |
 | `OPENCODE_DB` | OpenCode's own database setting: an absolute path, or a name relative to the OpenCode data directory; `:memory:` means none |
 | `XDG_DATA_HOME` | Data directory holding `opencode/` (default `~/.local/share`) |
+| `AGY_SESSIONS_DIR` | Antigravity brain directory holding conversation transcripts (default `~/.gemini/antigravity-cli/brain`) |
+| `GEMINI_HOME` | Gemini home directory; `antigravity-cli/brain` is read under it when `AGY_SESSIONS_DIR` is unset (default `~/.gemini`) |
 
 ## `agent-stats usage`
 
@@ -42,7 +44,7 @@ Prints help for usage reports. Accepts no positional arguments.
 
 ## `agent-stats usage skills`
 
-Counts every skill invocation in the stored sessions of Claude Code, Codex, Pi, and OpenCode, and lists skills from most to least used. Accepts no positional arguments.
+Counts every skill invocation in the stored sessions of Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`), and lists skills from most to least used. Accepts no positional arguments.
 
 An invocation is counted as `model` when the agent loaded the skill itself and `user` when the user invoked it:
 
@@ -50,6 +52,7 @@ An invocation is counted as `model` when the agent loaded the skill itself and `
 - Codex: a successful shell command that reads a skill's `SKILL.md` from its first line (model); a `$name` mention (user). Commands the user ran with `!` are not counted.
 - Pi: a `read` of a skill's `SKILL.md` from its first line (model); a `/skill:name` command (user).
 - OpenCode: a `skill` tool call (model).
+- Antigravity (`agy`): a file-read tool call (`read_file`, `view_file`, `client_view_file`, `read`) or shell command that reads a skill's `SKILL.md` from its first line (model).
 
 Shell reads expand unquoted brace groups such as `skills/{programming,golang}/SKILL.md` into individual skills, counting each skill once per command. Quoted braces remain literal.
 
@@ -59,7 +62,7 @@ Rows are sorted by total, then skill name, then harness.
 
 | Flag | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--harness` | stringSlice | `[]` (all harnesses) | Only count these harnesses: `claude-code`, `codex`, `pi`, `opencode`. Repeat the flag or separate names with commas; case is ignored. |
+| `--harness` | stringSlice | `[]` (all harnesses) | Only count these harnesses: `claude-code`, `codex`, `pi`, `opencode`, `agy` (alias `antigravity`). Repeat the flag or separate names with commas; case is ignored. |
 | `--by-harness` | bool | `false` | Show one row per skill and harness instead of one row per skill. |
 | `--since` | string | `""` (everything) | Only count invocations at or after a time: a number of days such as `30d`, a Go duration such as `12h` or `90m`, a date such as `2026-10-01` (local midnight), or an RFC 3339 time. |
 | `--limit` | int | `0` (all rows) | Show at most this many rows. Must be zero or more. |

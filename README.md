@@ -1,10 +1,10 @@
-`agent-stats` reports how AI coding agents are used on your machine, starting with which skills they use most. It reads the session history that Claude Code, Codex, Pi, and OpenCode already keep locally, so there is nothing to install into the agents and no daemon to run.
+`agent-stats` reports how AI coding agents are used on your machine, starting with which skills they use most. It reads the session history that Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`) already keep locally, so there is nothing to install into the agents and no daemon to run.
 
 # What It Does
 
 - **Ranks skills by use**: Counts every skill invocation across all stored sessions and lists skills from most to least used.
 - **Separates who asked**: Splits each count into loads the agent made on its own and skills you invoked explicitly.
-- **Covers four harnesses**: Reads Claude Code, Codex, Pi, and OpenCode history, including Codex's compressed and archived sessions.
+- **Covers five harnesses**: Reads Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`) history, including Codex's compressed and archived sessions.
 - **Filters by harness and time**: Narrows the report to selected harnesses and to a recent window such as the last 30 days.
 - **Serves people and agents**: Prints a table for people, and tab-separated lines or JSON for scripts and agents.
 
@@ -16,9 +16,9 @@
 
 # How it Really Works
 
-- Sessions are read from the harnesses' own locations: `~/.claude/projects`, `~/.codex/sessions` and `~/.codex/archived_sessions`, `~/.pi/agent/sessions`, and `~/.local/share/opencode`. The harnesses' environment variables, such as `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_SESSIONS_DIR`, `OPENCODE_DB`, and `XDG_DATA_HOME`, move these locations the same way they move them for the harness.
+- Sessions are read from the harnesses' own locations: `~/.claude/projects`, `~/.codex/sessions` and `~/.codex/archived_sessions`, `~/.pi/agent/sessions`, `~/.local/share/opencode`, and `~/.gemini/antigravity-cli/brain`. The harnesses' environment variables, such as `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_SESSIONS_DIR`, `OPENCODE_DB`, `XDG_DATA_HOME`, `AGY_SESSIONS_DIR`, and `GEMINI_HOME`, move these locations the same way they move them for the harness.
 - Nothing is written. Transcripts are only read, and OpenCode databases are opened read-only, so running `agent-stats` next to active agents is safe.
-- A skill counts as **model** when the agent loaded it itself and **user** when you invoked it: a Claude Code `Skill` call or slash command, a Codex `$name` mention or a read of the skill's `SKILL.md`, a Pi `read` of `SKILL.md` or `/skill:name`, or an OpenCode `skill` call. Commands you ran yourself with Codex's `!` are not counted.
+- A skill counts as **model** when the agent loaded it itself and **user** when you invoked it: a Claude Code `Skill` call or slash command, a Codex `$name` mention or a read of the skill's `SKILL.md`, a Pi `read` of `SKILL.md` or `/skill:name`, an OpenCode `skill` call, or an Antigravity file/shell read of `SKILL.md`. Commands you ran yourself with Codex's `!` are not counted.
 - Each load is counted once. Reading the rest of a long `SKILL.md` in later chunks does not add invocations, and a Claude Code or Pi fork, which starts by replaying its parent's history, counts only what happened after it was forked.
 - Every run reads all matching history from scratch; nothing is cached. Thousands of sessions take seconds to tens of seconds, spread across all CPU cores. In human mode on a terminal, a progress bar on stderr shows how many sessions have been read and clears itself before the results print. Agent mode, `--json`, and redirected stderr show no bar.
 - A session that cannot be read, such as a damaged archive, is skipped with a warning on stderr while the rest are still counted, and the exit status stays 0. Invalid flags exit 1.
@@ -69,7 +69,7 @@ Sample Output:
 
 | Flag | Short | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `--harness <names>` | | all harnesses | Only count `claude-code`, `codex`, `pi`, or `opencode`; repeat the flag or separate names with commas |
+| `--harness <names>` | | all harnesses | Only count `claude-code`, `codex`, `pi`, `opencode`, or `agy` (`antigravity`); repeat the flag or separate names with commas |
 | `--by-harness` | | `false` | Show one row per skill and harness |
 | `--since <time>` | | everything | Only count invocations since a time: days such as `30d`, a duration such as `12h`, a date such as `2026-10-01`, or an RFC 3339 time |
 | `--limit <n>` | | `0` | Show at most this many rows; `0` shows all |

@@ -26,6 +26,7 @@ func fixtureHome(t *testing.T) string {
 	for _, key := range []string{
 		"CLAUDE_CONFIG_DIR", "CODEX_HOME", "CODEX_SESSIONS_DIR", "PI_CODING_AGENT_DIR",
 		"PI_SESSIONS_DIR", "OPENCODE_DB_PATH", "OPENCODE_DB", "XDG_DATA_HOME",
+		"AGY_SESSIONS_DIR", "GEMINI_HOME",
 	} {
 		t.Setenv(key, "")
 	}
@@ -176,7 +177,7 @@ func TestUsageSkillsRejectsBadFlags(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"--harness", "cursor"}, `unknown harness "cursor": use one of claude-code, codex, pi, opencode`},
+		{[]string{"--harness", "cursor"}, `unknown harness "cursor": use one of claude-code, codex, pi, opencode, agy`},
 		{[]string{"--since", "last week"}, `invalid --since "last week"`},
 		{[]string{"--since", "-2h"}, "must not be negative"},
 		{[]string{"--limit", "-1"}, "--limit must be zero or more, got -1"},
@@ -231,9 +232,23 @@ func TestParseSince(t *testing.T) {
 }
 
 func TestParseHarnessesDeduplicates(t *testing.T) {
-	got, err := parseHarnesses([]string{"pi", " Codex ", "pi"})
-	if err != nil || len(got) != 2 || got[0] != "pi" || got[1] != "codex" {
+	got, err := parseHarnesses([]string{"pi", " Codex ", "pi", "antigravity", "AGY"})
+	if err != nil || len(got) != 3 || got[0] != "pi" || got[1] != "codex" || got[2] != "agy" {
 		t.Fatalf("parseHarnesses = %v, %v", got, err)
+	}
+}
+
+func TestUsageSkillsAgyHarnessAndAlias(t *testing.T) {
+	t.Setenv("AGENT", "1")
+	home := fixtureHome(t)
+	writeFile(t, filepath.Join(home, ".gemini/antigravity-cli/brain/agy-conv/.system_generated/logs/transcript_full.jsonl"),
+		`{"step_index":0,"type":"PLANNER_RESPONSE","created_at":"2026-11-02T10:00:00Z","tool_calls":[{"id":"c1","name":"view_file","args":{"AbsolutePath":"/x/skills/golang/SKILL.md"}}]}`,
+	)
+	for _, h := range []string{"agy", "antigravity"} {
+		stdout, stderr, code := execute(t, "usage", "skills", "--harness", h, "--by-harness")
+		if code != 0 || stderr != "" || stdout != "golang\tagy\t1\t0\t1\n" {
+			t.Fatalf("--harness %s: code=%d stderr=%q stdout=%q", h, code, stderr, stdout)
+		}
 	}
 }
 

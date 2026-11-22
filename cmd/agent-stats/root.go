@@ -10,7 +10,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "agent-stats",
 		Short:         "Report how AI coding agents are used on this machine",
-		Long:          "agent-stats reads the session history that Claude Code, Codex, Pi, and OpenCode keep on this machine and reports usage statistics, such as which skills are used most.",
+		Long:          "agent-stats reads the session history that Claude Code, Codex, Pi, OpenCode, and Antigravity (agy) keep on this machine and reports usage statistics, such as which skills are used most.",
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,

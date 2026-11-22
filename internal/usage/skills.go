@@ -284,6 +284,8 @@ func lineParser(harness parser.Harness) func([]byte) ([]parser.ParsedEvent, erro
 		return parser.NewClaudeCodeParser().ParseLine
 	case parser.HarnessCodex:
 		return parser.NewCodexParser().ParseLine
+	case parser.HarnessAgy:
+		return parser.NewAgyParser().ParseLine
 	default:
 		return func(line []byte) ([]parser.ParsedEvent, error) { return parser.ParsePiLine(line, "") }
 	}

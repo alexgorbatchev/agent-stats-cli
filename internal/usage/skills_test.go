@@ -21,6 +21,7 @@ func isolateEnv(t *testing.T) {
 	for _, key := range []string{
 		"CLAUDE_CONFIG_DIR", "CODEX_HOME", "CODEX_SESSIONS_DIR", "PI_CODING_AGENT_DIR",
 		"PI_SESSIONS_DIR", "OPENCODE_DB_PATH", "OPENCODE_DB", "XDG_DATA_HOME",
+		"AGY_SESSIONS_DIR", "GEMINI_HOME",
 	} {
 		t.Setenv(key, "")
 	}
@@ -115,6 +116,9 @@ func buildHome(t *testing.T) string {
 		`{"type":"message","timestamp":"2025-11-03T11:00:01Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"c2","name":"read","arguments":{"path":"/x/skills/bun/SKILL.md"}}]}}`,
 	)
 	writeOpencode(t, filepath.Join(home, ".local/share/opencode/opencode.db"))
+	write(t, filepath.Join(home, ".gemini/antigravity-cli/brain/agy-1/.system_generated/logs/transcript_full.jsonl"),
+		`{"step_index":0,"type":"PLANNER_RESPONSE","created_at":"2025-11-03T10:00:00Z","tool_calls":[{"id":"c1","name":"view_file","args":{"AbsolutePath":"/x/skills/golang/SKILL.md"}},{"id":"c2","name":"run_command","args":{"CommandLine":"cat /x/skills/git-release/SKILL.md"}}]}`,
+	)
 
 	// A Claude Code fork the session spawned at 10:05: it replays the session's Skill call
 	// and the spawning call itself, then loads a skill of its own.
@@ -148,15 +152,17 @@ func TestSkillCountsAcrossHarnesses(t *testing.T) {
 		{Skill: "docs-writer", Harness: parser.HarnessClaudeCode, Model: 1, User: 1},
 		{Skill: "bun", Harness: parser.HarnessPi, Model: 1},
 		{Skill: "docs-writer", Harness: parser.HarnessCodex, Model: 1},
+		{Skill: "git-release", Harness: parser.HarnessAgy, Model: 1},
 		{Skill: "git-release", Harness: parser.HarnessOpencode, Model: 1},
+		{Skill: "golang", Harness: parser.HarnessAgy, Model: 1},
 		{Skill: "golang", Harness: parser.HarnessClaudeCode, Model: 1},
 		{Skill: "golang", Harness: parser.HarnessPi, Model: 1},
 	}
 	if !reflect.DeepEqual(report.Counts, want) {
 		t.Errorf("counts = %+v\nwant     %+v", report.Counts, want)
 	}
-	if report.Sessions != 6 {
-		t.Errorf("sessions = %d, want 6", report.Sessions)
+	if report.Sessions != 7 {
+		t.Errorf("sessions = %d, want 7", report.Sessions)
 	}
 	if len(report.Problems) != 0 {
 		t.Errorf("problems = %+v", report.Problems)
@@ -166,8 +172,8 @@ func TestSkillCountsAcrossHarnesses(t *testing.T) {
 	wantCombined := []Count{
 		{Skill: "bun", Model: 2, User: 1},
 		{Skill: "docs-writer", Model: 2, User: 1},
-		{Skill: "golang", Model: 2},
-		{Skill: "git-release", Model: 1},
+		{Skill: "golang", Model: 3},
+		{Skill: "git-release", Model: 2},
 	}
 	if !reflect.DeepEqual(combined, wantCombined) {
 		t.Errorf("combined = %+v\nwant       %+v", combined, wantCombined)
@@ -188,7 +194,7 @@ func TestSkillCountsReportsProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if progress.total != 6 || progress.read != 6 || report.Sessions != 6 {
+	if progress.total != 7 || progress.read != 7 || report.Sessions != 7 {
 		t.Errorf("progress = %+v, sessions = %d; want every discovered session reported read", progress, report.Sessions)
 	}
 }
@@ -235,10 +241,10 @@ func TestSkillCountsReportsUnreadableSessions(t *testing.T) {
 	if len(report.Counts) == 0 {
 		t.Error("readable sessions were not counted")
 	}
-	// buildHome holds 6 readable sessions; the corrupt rollout and the broken database
+	// buildHome holds 7 readable sessions; the corrupt rollout and the broken database
 	// are reported, not counted as read.
-	if report.Sessions != 6 {
-		t.Errorf("sessions = %d, want only the 6 readable ones", report.Sessions)
+	if report.Sessions != 7 {
+		t.Errorf("sessions = %d, want only the 7 readable ones", report.Sessions)
 	}
 }
 

@@ -33,7 +33,7 @@ func newUsageSkillsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "skills",
 		Short: "Show which skills agents use most",
-		Long: "Counts every skill invocation in the sessions Claude Code, Codex, Pi, and OpenCode keep on this machine, " +
+		Long: "Counts every skill invocation in the sessions Claude Code, Codex, Pi, OpenCode, and Antigravity (agy) keep on this machine, " +
 			"whether the agent loaded the skill on its own or you asked for it, and lists skills from most to least used.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -76,7 +76,7 @@ func newUsageSkillsCommand() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringSliceVar(&flags.harnesses, "harness", nil, "Only count these harnesses: claude-code, codex, pi, opencode (repeatable or comma-separated)")
+	f.StringSliceVar(&flags.harnesses, "harness", nil, "Only count these harnesses: claude-code, codex, pi, opencode, agy (alias antigravity; repeatable or comma-separated)")
 	f.BoolVar(&flags.byHarness, "by-harness", false, "Show a separate row for each skill and harness")
 	f.StringVar(&flags.since, "since", "", "Only count invocations since a time: a duration such as 30d or 12h, or a date such as 2026-10-01")
 	f.IntVar(&flags.limit, "limit", 0, "Show at most this many rows; 0 shows all")
@@ -88,7 +88,11 @@ func parseHarnesses(values []string) ([]parser.Harness, error) {
 	supported := parser.SupportedHarnesses()
 	var harnesses []parser.Harness
 	for _, value := range values {
-		harness := parser.Harness(strings.TrimSpace(strings.ToLower(value)))
+		normalized := strings.TrimSpace(strings.ToLower(value))
+		if normalized == "antigravity" {
+			normalized = string(parser.HarnessAgy)
+		}
+		harness := parser.Harness(normalized)
 		if !slices.Contains(supported, harness) {
 			names := make([]string, len(supported))
 			for i, h := range supported {
