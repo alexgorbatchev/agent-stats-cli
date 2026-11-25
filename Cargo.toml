@@ -1,0 +1,31 @@
+[package]
+name = "agent-stats-cli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Report how AI coding agents are used on this machine"
+
+[[bin]]
+name = "agent-stats"
+path = "src/main.rs"
+
+[dependencies]
+agent-parser = { git = "https://github.com/alexgorbatchev/agent-parser-rust.git", rev = "dab13ad3920b6e3823f5ef44be38280e3e98f220" }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+clap = { version = "4", features = ["string"] }
+clap_complete = "4"
+cli-command-kit = { git = "https://github.com/alexgorbatchev/cli-command-kit-rust.git", rev = "dead4a60e08c7a84bc77ef329b220bfecd57627b" }
+comfy-table = "7"
+ctrlc = "3"
+csv = "1"
+dirs = "7"
+indicatif = "0.18"
+rayon = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+chrono-tz = "0.10"
+rusqlite = { version = "0.39", features = ["bundled"] }
+tempfile = "3"
+zstd = "0.13"
