@@ -19,9 +19,28 @@ run-ai *args:
 test:
     cargo test --locked
 
-# Run affected tests by test name
-test-affected filter:
-    cargo test --locked {{ quote(filter) }}
+# Run tests when package or test inputs changed since the merge base
+test-affected base="origin/main":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    candidate={{ quote(base) }}
+    if git rev-parse --verify --quiet --end-of-options "$candidate^{commit}" >/dev/null; then
+        base=$(git merge-base -- "$candidate" HEAD)
+        files=$(git diff --name-only "$base" --; git ls-files --others --exclude-standard)
+        affected=false
+        while IFS= read -r file; do
+            case "$file" in
+                ""|README.md|docs/*|LICENSE|go-upstream.json) ;;
+                *) affected=true ;;
+            esac
+        done <<< "$files"
+        if ! "$affected"; then
+            echo 'No agent-stats test inputs changed.'
+            exit 0
+        fi
+    fi
+    echo 'Selected agent-stats-cli: package or test inputs changed.'
+    just test
 
 # Check line and function coverage
 coverage:
