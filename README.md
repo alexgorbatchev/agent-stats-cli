@@ -2,8 +2,6 @@
 
 `agent-stats` reports which skills you and your AI coding agents use across Claude Code, Codex, Pi, OpenCode, and Antigravity. It reads locally stored session history and opens OpenCode databases in read-only mode.
 
-The Go implementation is deprecated. See the [`go-legacy` branch](https://github.com/alexgorbatchev/agent-stats-cli/tree/go-legacy) for its source. Existing Go release tags remain available.
-
 ## Install
 
 Download the prebuilt archive for your platform from the [latest GitHub release](https://github.com/alexgorbatchev/agent-stats-cli/releases/latest) and place `agent-stats` on your `PATH`.
