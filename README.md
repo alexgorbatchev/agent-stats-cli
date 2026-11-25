@@ -52,7 +52,7 @@ just run usage skills --limit 10
 just check
 ```
 
-The check requires Clippy, rustfmt, and `cargo-llvm-cov` with the `llvm-tools-preview` component. The Go reference repository and verified commit are recorded in [go-upstream.json](go-upstream.json).
+The check requires Clippy, rustfmt, and `cargo-llvm-cov` with the `llvm-tools-preview` component.
 
 ## License
 
