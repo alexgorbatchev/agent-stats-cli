@@ -1,3 +1,4 @@
+use agent_parser::parse_go_duration;
 use chrono::{DateTime, Days, NaiveDate, NaiveDateTime, Offset, TimeDelta, TimeZone};
 
 pub fn parse(value: &str, now: DateTime<impl TimeZone>) -> Result<i64, String> {
@@ -20,7 +21,7 @@ pub fn parse(value: &str, now: DateTime<impl TimeZone>) -> Result<i64, String> {
             .map(|at| at.timestamp_millis())
             .ok_or_else(|| format!("invalid --since {value:?}: date is out of range"));
     }
-    if let Some(duration) = duration_ns(value) {
+    if let Some(duration) = parse_go_duration(value) {
         if duration < 0 {
             return Err(format!(
                 "invalid --since {value:?}: the duration must not be negative"
@@ -58,76 +59,6 @@ fn local_time<Tz: TimeZone>(tz: &Tz, local: NaiveDateTime) -> Option<DateTime<Tz
     let candidate = local.checked_sub_signed(offset(local))?;
     let resolved = local.checked_sub_signed(offset(candidate))?;
     Some(tz.from_utc_datetime(&resolved))
-}
-
-/// Parse a Go-style duration in signed nanoseconds.
-pub fn duration_ns(mut value: &str) -> Option<i64> {
-    let negative = value.starts_with('-');
-    value = value.strip_prefix(['-', '+']).unwrap_or(value);
-    if value == "0" {
-        return Some(0);
-    }
-    if value.is_empty() {
-        return None;
-    }
-
-    let mut total = 0u64;
-    while !value.is_empty() {
-        let (integer, rest) = digits(value);
-        let (fraction, rest) = rest.strip_prefix('.').map_or(("", rest), digits);
-        if integer.is_empty() && fraction.is_empty() {
-            return None;
-        }
-        let (unit, rest) = rest.split_at(
-            rest.find(|c: char| c.is_ascii_digit() || c == '.')
-                .unwrap_or(rest.len()),
-        );
-        let multiplier = match unit {
-            "ns" => 1,
-            "us" | "µs" | "μs" => 1_000,
-            "ms" => 1_000_000,
-            "s" => 1_000_000_000,
-            "m" => 60_000_000_000,
-            "h" => 3_600_000_000_000,
-            _ => return None,
-        };
-        let integer = if integer.is_empty() {
-            0
-        } else {
-            integer.parse::<u64>().ok()?
-        };
-        let whole = integer.checked_mul(multiplier)?;
-        let fractional = fraction_ns(fraction, multiplier);
-        total = total.checked_add(whole)?.checked_add(fractional)?;
-        value = rest;
-    }
-    if negative && total == 1 << 63 {
-        return Some(i64::MIN);
-    }
-    let total = i64::try_from(total).ok()?;
-    Some(if negative { -total } else { total })
-}
-
-fn digits(value: &str) -> (&str, &str) {
-    let end = value.bytes().take_while(u8::is_ascii_digit).count();
-    value.split_at(end)
-}
-
-fn fraction_ns(fraction: &str, multiplier: u64) -> u64 {
-    let mut mantissa = 0;
-    let mut scale = 1.0;
-    for digit in fraction.bytes() {
-        if mantissa > i64::MAX as u64 / 10 {
-            break;
-        }
-        let next = mantissa * 10 + u64::from(digit - b'0');
-        if next > 1 << 63 {
-            break;
-        }
-        mantissa = next;
-        scale *= 10.0;
-    }
-    (mantissa as f64 * (multiplier as f64 / scale)) as u64
 }
 
 #[cfg(test)]
@@ -210,7 +141,7 @@ mod tests {
             (".s", None),
             ("1", None),
         ] {
-            assert_eq!(duration_ns(input), expected, "{input}");
+            assert_eq!(parse_go_duration(input), expected, "{input}");
         }
     }
 }

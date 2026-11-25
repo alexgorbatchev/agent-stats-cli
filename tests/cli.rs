@@ -76,6 +76,21 @@ fn filters_harness_and_time_before_limiting() {
 }
 
 #[test]
+fn parses_local_dates_and_relative_since_values_in_the_cli() {
+    let home = Home::populated();
+    let all = stdout(&home, &["usage", "skills"], true);
+    assert_eq!(
+        stdout(&home, &["usage", "skills", "--since", "1970-01-01"], true),
+        all
+    );
+    for since in ["30d", "24h"] {
+        let output = run(&home, &["usage", "skills", "--since", since], true);
+        assert!(output.status.success(), "{output:?}");
+        assert!(output.stderr.is_empty(), "{output:?}");
+    }
+}
+
+#[test]
 fn handles_empty_reports_in_all_modes() {
     let home = Home::empty();
     let args = ["usage", "skills"];
@@ -144,6 +159,11 @@ fn reports_invalid_arguments_on_stderr() {
         (&["--harness", "nope"][..], "unknown harness \"nope\""),
         (&["--since", "-1h"][..], "the duration must not be negative"),
         (&["--since", "nonsense"][..], "invalid --since \"nonsense\""),
+        (
+            &["--since", "999999999999999999999d"][..],
+            "days are out of range",
+        ),
+        (&["--since", "99999999999d"][..], "date is out of range"),
         (
             &["--limit", "-1"][..],
             "--limit must be zero or more, got -1",

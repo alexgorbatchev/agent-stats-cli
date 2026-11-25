@@ -23,9 +23,9 @@ test:
 test-affected filter:
     cargo test --locked {{ quote(filter) }}
 
-# Check line coverage
+# Check line and function coverage
 coverage:
-    cargo llvm-cov --all-targets --locked --ignore-filename-regex '(^|/)tests/' --fail-under-lines 90
+    cargo llvm-cov --all-targets --locked --ignore-filename-regex '(^|/)tests/' --fail-under-lines 90 --fail-under-functions 90
 
 lint:
     cargo fmt --all -- --check

@@ -27,10 +27,13 @@ fn main() -> ExitCode {
         canceled: &canceled,
         stderr_is_terminal: stderr.is_terminal() && std::env::var("TERM").as_deref() != Ok("dumb"),
     };
-    let result = ctrlc::set_handler(move || interrupt.store(true, Ordering::Relaxed))
-        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })
-        .and_then(|()| cli::run(std::env::args_os(), runtime, &mut stdout, &mut stderr))
-        .and_then(|()| stdout.flush().map_err(Into::into));
+    let result = match ctrlc::set_handler(move || interrupt.store(true, Ordering::Relaxed)) {
+        Ok(()) => match cli::run(std::env::args_os(), runtime, &mut stdout, &mut stderr) {
+            Ok(()) => stdout.flush().map_err(Into::into),
+            Err(error) => Err(error),
+        },
+        Err(error) => Err(Box::new(error) as Box<dyn std::error::Error>),
+    };
     if let Err(error) = result {
         let prefix = if mode == Mode::Agent {
             "ERR: "
@@ -45,9 +48,8 @@ fn main() -> ExitCode {
 }
 
 fn home_dir() -> PathBuf {
-    if cfg!(windows)
-        && let Some(home) = std::env::var_os("USERPROFILE").filter(|path| !path.is_empty())
-    {
+    #[cfg(windows)]
+    if let Some(home) = std::env::var_os("USERPROFILE").filter(|path| !path.is_empty()) {
         return home.into();
     }
     dirs::home_dir().unwrap_or_default()
