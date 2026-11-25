@@ -10,7 +10,7 @@ name = "agent-stats"
 path = "src/main.rs"
 
 [dependencies]
-agent-parser = { git = "https://github.com/alexgorbatchev/agent-parser-rust.git", rev = "a7e9b1f96f538d98ed86c57a1e2db23198d0ff5a" }
+agent-parser = { git = "https://github.com/alexgorbatchev/agent-parser-rust.git", rev = "201822cbf57aa5684088ae0fcbc3b1713dffa9e6" }
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 clap = { version = "4", features = ["string"] }
 clap_complete = "4"
