@@ -1,60 +1,64 @@
 set dotenv-load := false
 
-# Minimum statement coverage the module must keep, enforced by `just coverage`
-min_coverage := "90"
-
-# Default recipe: list available recipes
 default:
     @just --list
 
 # Prepare development dependencies
 setup:
-    go mod download
+    cargo fetch --locked
 
-# Run CLI in human mode (default)
+# Run the CLI
 run *args:
-    go run ./cmd/agent-stats {{ args }}
+    cargo run --locked --bin agent-stats -- {{ args }}
 
-# Run CLI in agent-facing mode
+# Run the CLI in agent mode
 run-ai *args:
-    AGENT=1 go run ./cmd/agent-stats {{ args }}
+    AGENT=1 cargo run --locked --bin agent-stats -- {{ args }}
 
-# Run the tests with the race detector
+# Run offline checks against the locked dependency graph
 test:
-    go test -race ./...
+    cargo test --locked
 
-# Run the tests and fail when statement coverage drops below the floor
+# Run tests when package or test inputs changed since the merge base
+test-affected base="origin/main":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    candidate={{ quote(base) }}
+    if git rev-parse --verify --quiet --end-of-options "$candidate^{commit}" >/dev/null; then
+        base=$(git merge-base -- "$candidate" HEAD)
+        files=$(git diff --name-only "$base" --; git ls-files --others --exclude-standard)
+        affected=false
+        while IFS= read -r file; do
+            case "$file" in
+                ""|README.md|docs/*|LICENSE|go-upstream.json) ;;
+                *) affected=true ;;
+            esac
+        done <<< "$files"
+        if ! "$affected"; then
+            echo 'No agent-stats test inputs changed.'
+            exit 0
+        fi
+    fi
+    echo 'Selected agent-stats-cli: package or test inputs changed.'
+    just test
+
+# Check line and function coverage
 coverage:
-    bash scripts/check-coverage.sh {{ min_coverage }}
+    cargo llvm-cov --all-targets --locked --ignore-filename-regex '(^|/)tests/' --fail-under-lines 90 --fail-under-functions 90
 
-# Build binary into bin/
-build:
-    mkdir -p bin
-    go build -o bin/agent-stats ./cmd/agent-stats
-
-# Install binary to GOPATH bin directory
-install:
-    go install ./cmd/agent-stats
-
-# Check formatting and module hygiene, vet, and run golangci-lint
 lint:
-    @out="$(gofmt -l .)"; if [ -n "$out" ]; then echo "Unformatted Go files:"; echo "$out"; exit 1; fi
-    go mod tidy -diff
-    go vet ./...
-    golangci-lint run
+    cargo fmt --all -- --check
+    cargo clippy --all-targets --locked -- -D warnings
 
-# Alias for lint
-vet: lint
-
-# Format Go code
 fmt:
-    go fmt ./...
+    cargo fmt --all
 
-# Run every static check and the coverage-gated tests
-check:
-    just lint
-    just coverage
+# Run static and coverage-gated checks
+check: lint coverage
 
-# Clean build and coverage outputs
-clean:
-    rm -rf bin coverage.out dist
+# Build the release binary
+build:
+    cargo build --release --locked
+
+install:
+    cargo install --path . --locked

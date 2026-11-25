@@ -1,23 +1,6 @@
-# Binaries
-bin/
-/agent-stats
-/agent-stats-cli
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Directories and temporary files
-.tmp/
-.codegraph/
-.cache/
-.pi-subagents/
-dist/
-build/
-coverage.out
-
-# OS / Editor files
-.DS_Store
-*.swp
-*.swo
+/target/
+/bin/
+/dist/
+/.state/
+/.tmp/
+/coverage.lcov

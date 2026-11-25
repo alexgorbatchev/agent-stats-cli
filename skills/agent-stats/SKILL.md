@@ -4,7 +4,7 @@ description: "Use when answering questions about how AI coding agents were used 
 author: "Alex Gorbatchev"
 metadata:
   created_on: 2026-11-03 10:39
-  last_modified: 2026-11-22 14:18
+  last_modified: 2026-11-25 05:12
   status: current
 ---
 
@@ -18,7 +18,7 @@ Paths in messages show the home directory as `~`.
 
 ## `agent-stats`
 
-Prints help. Accepts no positional arguments. `--help`, `-h` bool prints help for any command, and `--version`, `-v` bool prints the version followed by a newline.
+Prints help. Accepts no positional arguments. `--help`, `-h` bool prints help for any command, and `--version`, `-v` bool (default `false`) prints the version followed by a newline.
 
 ### Environment variables
 
@@ -101,7 +101,7 @@ Prints how to install this skill with the Skills CLI. Accepts no positional argu
 
 ## `agent-stats completion`
 
-Generates shell completion scripts: `agent-stats completion bash`, `agent-stats completion zsh`, `agent-stats completion fish`, and `agent-stats completion powershell`. Each accepts `--no-descriptions` bool to leave out command descriptions. Writes the script to stdout.
+Generates shell completion scripts: `agent-stats completion bash`, `agent-stats completion zsh`, `agent-stats completion fish`, and `agent-stats completion powershell`. Each accepts `--no-descriptions` bool (default `false`) to leave out command descriptions. Writes the script to stdout.
 
 ## `agent-stats help`
 

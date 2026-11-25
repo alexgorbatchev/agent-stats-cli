@@ -1,82 +1,61 @@
-`agent-stats` reports how AI coding agents are used on your machine, starting with which skills they use most. It reads the session history that Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`) already keep locally, so there is nothing to install into the agents and no daemon to run.
+# agent-stats
 
-# What It Does
+`agent-stats` reports which skills you and your AI coding agents use across Claude Code, Codex, Pi, OpenCode, and Antigravity. It reads locally stored session history and opens OpenCode databases in read-only mode.
 
-- **Ranks skills by use**: Counts every skill invocation across all stored sessions and lists skills from most to least used.
-- **Separates who asked**: Splits each count into loads the agent made on its own and skills you invoked explicitly.
-- **Covers five harnesses**: Reads Claude Code, Codex, Pi, OpenCode, and Antigravity (`agy`) history, including Codex's compressed and archived sessions.
-- **Filters by harness and time**: Narrows the report to selected harnesses and to a recent window such as the last 30 days.
-- **Serves people and agents**: Prints a table for people, and tab-separated lines or JSON for scripts and agents.
+The Go implementation is deprecated. See the [`go-legacy` branch](https://github.com/alexgorbatchev/agent-stats-cli/tree/go-legacy) for its source. Existing Go release tags remain available.
 
-# How It Works
+## Install
 
-- Finds every session the supported harnesses have stored on this machine.
-- Reads each session and picks out the moments a skill was invoked.
-- Adds the invocations up per skill, or per skill and harness, and prints them sorted by total.
+Download the prebuilt archive for your platform from the [latest GitHub release](https://github.com/alexgorbatchev/agent-stats-cli/releases/latest) and place `agent-stats` on your `PATH`.
 
-# How it Really Works
-
-- Sessions are read from the harnesses' own locations: `~/.claude/projects`, `~/.codex/sessions` and `~/.codex/archived_sessions`, `~/.pi/agent/sessions`, `~/.local/share/opencode`, and `~/.gemini/antigravity-cli/brain`. The harnesses' environment variables, such as `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_SESSIONS_DIR`, `OPENCODE_DB`, `XDG_DATA_HOME`, `AGY_SESSIONS_DIR`, and `GEMINI_HOME`, move these locations the same way they move them for the harness.
-- Nothing is written. Transcripts are only read, and OpenCode databases are opened read-only, so running `agent-stats` next to active agents is safe.
-- A skill counts as **model** when the agent loaded it itself and **user** when you invoked it: a Claude Code `Skill` call or slash command, a Codex `$name` mention or a read of the skill's `SKILL.md`, a Pi `read` of `SKILL.md` or `/skill:name`, an OpenCode `skill` call, or an Antigravity file/shell read of `SKILL.md`. Commands you ran yourself with Codex's `!` are not counted.
-- Each load is counted once. Reading the rest of a long `SKILL.md` in later chunks does not add invocations, and a Claude Code or Pi fork, which starts by replaying its parent's history, counts only what happened after it was forked.
-- Every run reads all matching history from scratch; nothing is cached. Thousands of sessions take seconds to tens of seconds, spread across all CPU cores. In human mode on a terminal, a progress bar on stderr shows how many sessions have been read and clears itself before the results print. Agent mode, `--json`, and redirected stderr show no bar.
-- A session that cannot be read, such as a damaged archive, is skipped with a warning on stderr while the rest are still counted, and the exit status stays 0. Invalid flags exit 1.
-- Results go to stdout and warnings and errors to stderr, with the home directory shown as `~`. Setting `AGENT=1` switches to compact, tab-separated output meant for agents and scripts.
-
-# Installation
-
-Download the prebuilt binary for your platform from the [latest release](https://github.com/alexgorbatchev/agent-stats-cli/releases/latest).
-
-```bash
+```sh
 # macOS (Apple Silicon)
-curl -fsSL https://github.com/alexgorbatchev/agent-stats-cli/releases/latest/download/agent-stats_darwin_arm64.tar.gz | tar -xz -C ~/.local/bin
+mkdir -p "$HOME/.local/bin"
+curl -fsSLO https://github.com/alexgorbatchev/agent-stats-cli/releases/latest/download/agent-stats_darwin_arm64.tar.gz
+tar -xzf agent-stats_darwin_arm64.tar.gz -C "$HOME/.local/bin"
+"$HOME/.local/bin/agent-stats" --version
 ```
 
-# Quick Start
+## Usage
 
-```bash
-# Show the ten most-used skills across every harness
+```sh
 agent-stats usage skills --limit 10
-
-# Compare harnesses over the last 30 days
 agent-stats usage skills --by-harness --since 30d
-
-# Only Codex and Pi, as JSON
 agent-stats usage skills --harness codex,pi --json
 ```
 
-Sample Output:
-```
-┌───────────────────────┬───────┬──────┬───────┐
-│ Skill                 │ Model │ User │ Total │
-├───────────────────────┼───────┼──────┼───────┤
-│ typescript            │ 722   │ 0    │ 722   │
-│ claude-code-codegraph │ 669   │ 0    │ 669   │
-│ docs-writer           │ 667   │ 0    │ 667   │
-└───────────────────────┴───────┴──────┴───────┘
-7654 invocations of 148 skills across 2200 sessions. Model: the agent loaded the skill itself. User: you invoked it.
+```text
+┌─────────────┬───────┬──────┬───────┐
+│ Skill       │ Model │ User │ Total │
+├─────────────┼───────┼──────┼───────┤
+│ bun         │ 2     │ 1    │ 3     │
+│ docs-writer │ 2     │ 1    │ 3     │
+└─────────────┴───────┴──────┴───────┘
+6 invocations of 2 skills across 3 sessions. Model: the agent loaded the skill itself. User: you invoked it.
 ```
 
-# Options & Flags
+| Flag | Meaning |
+| --- | --- |
+| `--harness <names>` | Select `claude-code`, `codex`, `pi`, `opencode`, or `agy` (alias `antigravity`). Repeat the flag or supply a comma-separated list. |
+| `--by-harness` | Show one row per skill and harness. |
+| `--since <time>` | Count invocations at or after a date (`2026-10-01`, local midnight), an RFC 3339 timestamp, or a lookback (`30d` or `12h`). |
+| `--limit <n>` | Show at most this many rows. The default, `0`, shows all rows. |
+| `--json` | Print a JSON array with `skill`, `model`, `user`, and `total`. With `--by-harness`, include `harness`. |
 
-| Flag | Short | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--help` | `-h` | `false` | Print help for any command |
-| `--version` | `-v` | `false` | Print the version and exit |
+Set `AGENT=1` for headerless TSV or compact JSON. Agent mode separates columns as `skill`, optional `harness`, `model`, `user`, and `total`. Human mode shows a table and a summary over the full report. Warnings go to stderr when a transcript or database cannot be read, and processing continues.
 
-`agent-stats usage skills`
+Default session locations and their environment overrides appear in `agent-stats --help`. Codex includes compressed and archived sessions. Claude Code and Pi forks count invocations recorded after the fork was created. Use `agent-stats skill` to install the bundled agent skill.
 
-| Flag | Short | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--harness <names>` | | all harnesses | Only count `claude-code`, `codex`, `pi`, `opencode`, or `agy` (`antigravity`); repeat the flag or separate names with commas |
-| `--by-harness` | | `false` | Show one row per skill and harness |
-| `--since <time>` | | everything | Only count invocations since a time: days such as `30d`, a duration such as `12h`, a date such as `2026-10-01`, or an RFC 3339 time |
-| `--limit <n>` | | `0` | Show at most this many rows; `0` shows all |
-| `--json` | | `false` | Print the rows as a JSON array |
+## Development
 
-`agent-stats skill` prints how to install the agent skill that teaches AI agents to operate `agent-stats`.
+```sh
+just setup
+just run usage skills --limit 10
+just check
+```
 
-# License
+The check requires Clippy, rustfmt, and `cargo-llvm-cov` with the `llvm-tools-preview` component. The Go reference repository and verified commit are recorded in [go-upstream.json](go-upstream.json).
 
-[MIT License](LICENSE) (c) 2026 Alex Gorbatchev
+## License
+
+[MIT](LICENSE)
